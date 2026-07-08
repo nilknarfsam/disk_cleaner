@@ -4,6 +4,12 @@ Ferramenta desktop para **Windows** que detecta discos conectados via USB e perm
 
 Substitui scripts BAT manuais com `diskpart` por um aplicativo Tkinter pronto para uso ou distribuição como `.exe`.
 
+### Download (sem compilar)
+
+Baixe o executável pronto na página de [Releases](https://github.com/nilknarfsam/disk_cleaner/releases/latest):
+
+**[Limpador_USB.exe](https://github.com/nilknarfsam/disk_cleaner/releases/download/v1.0.0/Limpador_USB.exe)** — v1.0.0
+
 ---
 
 ## Funcionalidades
@@ -97,8 +103,9 @@ dist\Limpador_USB.exe
 
 ```text
 disk_cleaner/
-├── main.py          # Aplicativo principal (Tkinter + diskpart)
-├── build_exe.bat    # Script para gerar o executável com PyInstaller
+├── main.py            # Aplicativo principal (Tkinter + diskpart)
+├── build_exe.bat      # Script para gerar o executável com PyInstaller
+├── PROMPT_CURSOR.md   # Prompt de desenvolvimento usado no Cursor
 └── README.md
 ```
 
