@@ -1,0 +1,52 @@
+<Window x:Class="Limpador_USB.Views.ConfirmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Confirmação de Operação — Limpador USB"
+        Height="460" Width="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F5F5F7"
+        FontFamily="Segoe UI">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header Alerta -->
+        <Border Grid.Row="0" Background="#C9302C" CornerRadius="6" Padding="12,10" Margin="0,0,0,14">
+            <TextBlock Text="⚠️ CONFIRMAÇÃO DE APAGAMENTO DE DISCO" 
+                       Foreground="White" FontWeight="Bold" FontSize="13" 
+                       HorizontalAlignment="Center"/>
+        </Border>
+
+        <!-- Ação -->
+        <GroupBox Grid.Row="1" Header="Ação a ser executada" Padding="10" Margin="0,0,0,10" FontWeight="SemiBold">
+            <TextBlock x:Name="TxtModeLabel" Text="FORMATAR RAPIDAMENTE EM NTFS" 
+                       Foreground="#1B4965" FontWeight="Bold" FontSize="12"/>
+        </GroupBox>
+
+        <!-- Discos Afetados -->
+        <GroupBox Grid.Row="2" Header="Discos selecionados que serão totalmente limpados/formatados" Padding="8" Margin="0,0,0,10" FontWeight="SemiBold">
+            <TextBox x:Name="TxtDisksInfo" IsReadOnly="True" VerticalScrollBarVisibility="Auto" 
+                     TextWrapping="Wrap" Background="#FAFAFA" FontFamily="Consolas" FontSize="11" Padding="6"/>
+        </GroupBox>
+
+        <!-- Warning Text -->
+        <TextBlock Grid.Row="3" Text="ATENÇÃO: TODOS OS DADOS NOS DISCOS SERÃO PERDIDOS PERMANENTEMENTE!" 
+                   Foreground="#A00000" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,14"/>
+
+        <!-- Botões Sim / Não -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <Button x:Name="BtnCancel" TextBlock.TextAlignment="Center" Content="❌ Não, Cancelar" 
+                    Width="180" Height="36" Click="BtnCancel_Click" IsCancel="True"
+                    Background="#E0E0E0" FontWeight="SemiBold"/>
+            <Button x:Name="BtnConfirm" TextBlock.TextAlignment="Center" Content="✔ Sim, Iniciar Processo" 
+                    Width="210" Height="36" Click="BtnConfirm_Click" IsDefault="True"
+                    Background="#C9302C" Foreground="White" FontWeight="Bold" Margin="115,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

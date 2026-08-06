@@ -25,3 +25,10 @@ Desktop.ini
 
 # Logs locais do app
 Limpador_USB_logs/
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.suo
+
