@@ -33,8 +33,21 @@
 
 ---
 
+### Versão 2.1.0 (Pacote de Melhorias de UI & Disco)
+- **Data**: Agosto 2026
+- **Novos Recursos**:
+  - **Modo Escuro (Dark Mode)**: Suporte a alternador de tema claro/escuro (`BtnTheme`).
+  - **Pesquisa Rápida**: Campo `TxtSearch` para filtrar discos em tempo real por nome, disco ou letra.
+  - **Barra Gráfica de Ocupação**: Exibição visual do nível de uso do disco com `ProgressBar` estilizada no DataGrid.
+  - **Ícones de Tipo de Dispositivo**: Diferenciação entre Pendrives (`🔌`) e HDs/SSDs Externos (`💽`).
+  - **Atribuição de Letra Específica**: ComboBox `ComboDriveLetter` com escolha de letras livres (`D:` a `Z:`) ou `Automática`.
+  - **Ejeção Segura de USB**: Botão `BtnEject` para ejetar/desmontar discos USB com segurança via Shell API.
+
+---
+
 ## 🛠️ Estado Atual do Repositório
 
-- **Status**: Compilando sem avisos ou erros.
+- **Status**: Compilando sem avisos ou erros (`v2.1.0`).
 - **Ramo Principal**: `main` no GitHub ([https://github.com/nilknarfsam/disk_cleaner](https://github.com/nilknarfsam/disk_cleaner)).
-- **Binários**: `releases/Limpador_USB-v2.0.0.exe` pronto para distribuição.
+- **Binários**: Executável standalone compilado em `dist/Limpador_USB.exe` e versionado em `releases/Limpador_USB-v2.1.0.exe`.
+

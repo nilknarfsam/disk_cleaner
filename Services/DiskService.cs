@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -31,6 +32,65 @@ namespace Limpador_USB.Services
             if (disk.IsOffline)
                 return $"Disco {disk.Number} está offline.";
             return string.Empty;
+        }
+
+        public static List<string> GetAvailableDriveLetters()
+        {
+            var usedLetters = DriveInfo.GetDrives()
+                .Select(d => d.Name.Substring(0, 1).ToUpper())
+                .ToHashSet();
+
+            var available = new List<string> { "Automática" };
+            for (char c = 'D'; c <= 'Z'; c++)
+            {
+                string letter = c.ToString();
+                if (!usedLetters.Contains(letter))
+                {
+                    available.Add($"{letter}:");
+                }
+            }
+            return available;
+        }
+
+        public static async Task<(bool success, string message)> EjectUsbDiskAsync(UsbDisk disk)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    string letters = disk.DriveLetters;
+                    if (string.IsNullOrWhiteSpace(letters) || letters == "-")
+                    {
+                        return (false, $"O Disco {disk.Number} não possui letra de unidade atribuída para ejetar.");
+                    }
+
+                    var firstLetter = letters.Split(',').Select(l => l.Trim().Replace(":", "")).FirstOrDefault(l => !string.IsNullOrEmpty(l));
+                    if (string.IsNullOrEmpty(firstLetter))
+                    {
+                        return (false, "Letra de unidade inválida.");
+                    }
+
+                    string psScript = $"$drive = '{firstLetter}:'; (New-Object -comObject Shell.Application).NameSpace(17).ParseName($drive).InvokeVerb('Eject')";
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "powershell",
+                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var proc = Process.Start(psi);
+                    proc?.WaitForExit(5000);
+
+                    return (true, $"Disco {disk.Number} ({firstLetter}:) foi ejetado com segurança.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Erro ao ejetar disco: {ex.Message}");
+                }
+            });
         }
 
         public static async Task<List<UsbDisk>> GetUsbDisksAsync()
@@ -110,10 +170,11 @@ $result | ConvertTo-Json -Depth 4
 
                     foreach (var elem in elements)
                     {
+                        string name = elem.TryGetProperty("FriendlyName", out var fn) ? fn.GetString() ?? "" : "";
                         var disk = new UsbDisk
                         {
                             Number = elem.GetProperty("Number").GetInt32(),
-                            FriendlyName = elem.TryGetProperty("FriendlyName", out var fn) ? fn.GetString() ?? "" : "",
+                            FriendlyName = name,
                             SerialNumber = elem.TryGetProperty("SerialNumber", out var sn) ? sn.GetString() ?? "" : "",
                             BusType = elem.TryGetProperty("BusType", out var bt) ? bt.GetString() ?? "" : "",
                             PartitionStyle = elem.TryGetProperty("PartitionStyle", out var ps) ? ps.GetString() ?? "" : "",
@@ -133,6 +194,15 @@ $result | ConvertTo-Json -Depth 4
                         long sizeBytes = elem.TryGetProperty("Size", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt64() : 0;
                         disk.SizeGB = sizeBytes > 0 ? Math.Round((double)sizeBytes / (1024 * 1024 * 1024), 2) : 0;
 
+                        if (disk.SizeGB > 120 || name.ToUpper().Contains("SSD") || name.ToUpper().Contains("EXTERNAL") || name.ToUpper().Contains("PASSPORT"))
+                        {
+                            disk.DiskIcon = "💽";
+                        }
+                        else
+                        {
+                            disk.DiskIcon = "🔌";
+                        }
+
                         if (elem.TryGetProperty("SizeRemaining", out var sr) && sr.ValueKind == JsonValueKind.Number && sizeBytes > 0)
                         {
                             long remBytes = sr.GetInt64();
@@ -140,11 +210,13 @@ $result | ConvertTo-Json -Depth 4
                             disk.UsedGB = Math.Round((double)usedBytes / (1024 * 1024 * 1024), 2);
                             disk.FreeGB = Math.Round((double)remBytes / (1024 * 1024 * 1024), 2);
                             double pct = Math.Round(((double)usedBytes / sizeBytes) * 100, 1);
+                            disk.UsedPercentage = pct;
                             disk.UsedStr = $"{disk.UsedGB} GB ({pct}%)";
                             disk.FreeStr = $"{disk.FreeGB} GB";
                         }
                         else
                         {
+                            disk.UsedPercentage = 0;
                             disk.UsedStr = "Não alocado";
                             disk.FreeStr = "0 GB";
                         }

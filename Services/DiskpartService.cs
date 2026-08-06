@@ -9,7 +9,12 @@ namespace Limpador_USB.Services
 {
     public class DiskpartService
     {
-        public static List<string> BuildDiskpartCommands(int diskNumber, string mode, string fsType = "NTFS", string label = "FORMATADO")
+        public static List<string> BuildDiskpartCommands(
+            int diskNumber, 
+            string mode, 
+            string fsType = "NTFS", 
+            string label = "FORMATADO",
+            string customLetter = "Automática")
         {
             string safeLabel = label.Replace("\"", "").Trim();
             if (safeLabel.Length > 32) safeLabel = safeLabel.Substring(0, 32);
@@ -26,7 +31,23 @@ namespace Limpador_USB.Services
             commands.Add("convert gpt");
             commands.Add("create partition primary");
             commands.Add($"format fs={fsType.ToLower()} quick label=\"{safeLabel}\"");
-            commands.Add("assign");
+            
+            if (!string.IsNullOrEmpty(customLetter) && customLetter != "Automática")
+            {
+                string letterOnly = customLetter.Replace(":", "").Trim().ToLower();
+                if (!string.IsNullOrEmpty(letterOnly))
+                {
+                    commands.Add($"assign letter={letterOnly}");
+                }
+                else
+                {
+                    commands.Add("assign");
+                }
+            }
+            else
+            {
+                commands.Add("assign");
+            }
 
             return commands;
         }

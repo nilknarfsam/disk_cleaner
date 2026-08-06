@@ -14,6 +14,7 @@ namespace Limpador_USB.Models
         public double SizeGB { get; set; }
         public double? UsedGB { get; set; }
         public double? FreeGB { get; set; }
+        public double UsedPercentage { get; set; }
         public string UsedStr { get; set; } = "-";
         public string FreeStr { get; set; } = "-";
         public string DriveLetters { get; set; } = "-";
@@ -24,6 +25,7 @@ namespace Limpador_USB.Models
         public bool IsSystem { get; set; }
         public bool IsOffline { get; set; }
         public bool IsReadOnly { get; set; }
+        public string DiskIcon { get; set; } = "🔌";
 
         public bool IsSelected
         {

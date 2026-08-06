@@ -2,30 +2,23 @@
 
 Ferramenta desktop nativa para **Windows** desenvolvida em **C# e .NET 9 (WPF)** que detecta discos conectados via USB e permite **limpar** ou **formatar rapidamente** HDs e SSDs externos com alta performance e proteções de segurança.
 
-Substitui scripts BAT manuais com `diskpart` por um aplicativo de interface gráfica nativa em um `.exe` standalone de inicialização instantânea.
-
-### Download (sem compilar)
-
-Baixe o executável pronto na página de [Releases](https://github.com/nilknarfsam/disk_cleaner/releases/latest):
-
-**[Limpador_USB.exe](https://github.com/nilknarfsam/disk_cleaner/releases/download/v2.0.0/Limpador_USB.exe)** — v2.0.0 (Windows 10 / 11)
-
 ---
 
-## Funcionalidades
+## Funcionalidades (v2.1.0)
 
-- **Interface Nativa Windows (WPF)**: Visual moderno do Windows 11 com tabela `DataGrid`, checkboxes nativas, ordenação e destaque visual.
-- **Detecção automática** de discos com `BusType = USB` (pendrives, HDs e SSDs em case USB).
-- **Cálculo de espaço de disco**: Exibe Tamanho Total, Espaço Usado (`GB` e `%`), Espaço Livre e Letra da unidade (ex.: `E:`, `F:`).
-- **Caixas de seleção visíveis (Checkboxes)**: Seleção fácil clicando em qualquer parte da linha ou pela tecla `Espaço`.
-- **Atualização em tempo real** da lista a cada 3 segundos ao conectar ou remover dispositivos sem travar a interface (`async/await`).
-- **Seleção múltipla** para processar vários discos em lote.
+- **Interface Nativa Windows (WPF)**: Visual moderno com suporte a **Modo Claro / Modo Escuro (Dark Mode)** alternável.
+- **🔍 Pesquisa Rápida em Tempo Real**: Campo de busca para filtrar discos por nome, modelo, número do disco ou letra da unidade.
+- **📊 Barra Gráfica de Ocupação**: Coluna de `Espaço Usado` com barra visual colorida indicando a porcentagem de ocupação do dispositivo.
+- **🔌/💽 Identificação Visual de Tipo**: Ícones diferenciam Pendrives USB (`🔌`) de HDs/SSDs Externos (`💽`).
+- **🔤 Atribuição de Letra Customizada**: Escolha a letra desejada (ex: `E:`, `G:`, `Z:`) ao formatar ou deixe em `Automática`.
+- **⏏️ Ejeção Segura de USB**: Botão para desmontar/ejetar o disco USB com segurança após o uso.
+- **Detecção automática** de discos com `BusType = USB` e atualização em tempo real a cada 3s (`async/await`).
+- **Seleção múltipla**: Marcadores `☑` / `☐` com clique flexível na linha ou tecla `Espaço`.
 - **Dois modos de operação:**
   - **Limpar e deixar Não Alocado** — equivalente a `diskpart clean`
   - **Formatação rápida** — `clean` + `convert gpt` + partição primária + `format quick` + `assign`
 - **Escolha de sistema de arquivos:** NTFS, exFAT ou FAT32 (com aviso para discos acima de 32 GB).
 - **Rótulo personalizado** do volume na formatação.
-- **Barra de progresso e status visual** durante o processamento do `diskpart`.
 - **Elevação UAC Nativa**: Manifesto `app.manifest` integrado com `requireAdministrator`.
 
 ---
