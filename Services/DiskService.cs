@@ -52,6 +52,33 @@ namespace Limpador_USB.Services
             return available;
         }
 
+        public static async Task ForceDismountVolumesAsync(int diskNumber)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    string psScript = $"Get-Partition -DiskNumber {diskNumber} -ErrorAction SilentlyContinue | Get-Volume -ErrorAction SilentlyContinue | Dismount-Volume -Confirm:$false -ErrorAction SilentlyContinue";
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "powershell",
+                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var proc = Process.Start(psi);
+                    proc?.WaitForExit(5000);
+                }
+                catch
+                {
+                    // Ignora se não houver volume montado
+                }
+            });
+        }
+
         public static async Task<(bool success, string message)> EjectUsbDiskAsync(UsbDisk disk)
         {
             return await Task.Run(() =>

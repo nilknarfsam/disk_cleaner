@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Media;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +36,7 @@ namespace Limpador_USB
             GridDisks.ItemsSource = _displayDisks;
 
             PopulateDriveLetters();
+            LoadThemePreference();
 
             _refreshTimer.Interval = TimeSpan.FromSeconds(RefreshSeconds);
             _refreshTimer.Tick += async (s, e) => await RefreshDisksAsync(silent: true);
@@ -118,9 +121,36 @@ namespace Limpador_USB
             ApplySearchFilter();
         }
 
-        private void BtnTheme_Click(object sender, RoutedEventArgs e)
+        private void LoadThemePreference()
         {
-            _isDarkMode = !_isDarkMode;
+            try
+            {
+                string cfgPath = Path.Combine(Path.GetTempPath(), "Limpador_USB_theme.cfg");
+                if (File.Exists(cfgPath))
+                {
+                    string theme = File.ReadAllText(cfgPath).Trim();
+                    if (theme == "dark")
+                    {
+                        SetDarkMode(true);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SaveThemePreference()
+        {
+            try
+            {
+                string cfgPath = Path.Combine(Path.GetTempPath(), "Limpador_USB_theme.cfg");
+                File.WriteAllText(cfgPath, _isDarkMode ? "dark" : "light");
+            }
+            catch { }
+        }
+
+        private void SetDarkMode(bool enableDark)
+        {
+            _isDarkMode = enableDark;
 
             if (_isDarkMode)
             {
@@ -144,6 +174,13 @@ namespace Limpador_USB
                 BtnTheme.Background = new SolidColorBrush(Color.FromRgb(229, 231, 235));
                 BtnTheme.Foreground = Brushes.Black;
             }
+
+            SaveThemePreference();
+        }
+
+        private void BtnTheme_Click(object sender, RoutedEventArgs e)
+        {
+            SetDarkMode(!_isDarkMode);
         }
 
         private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
@@ -267,6 +304,9 @@ namespace Limpador_USB
                         throw new InvalidOperationException(blockReason);
                     }
 
+                    TxtStatus.Text = $"Desmontando volumes do Disco {number}...";
+                    await DiskService.ForceDismountVolumesAsync(number);
+
                     TxtStatus.Text = $"Processando Disco {number}...";
 
                     var commands = DiskpartService.BuildDiskpartCommands(number, mode, fsType, label, customLetter);
@@ -280,13 +320,27 @@ namespace Limpador_USB
                     }
                 }
 
+                // Notificação sonora de conclusão
+                try { SystemSounds.Asterisk.Play(); } catch { }
+
                 MessageBox.Show("Operação finalizada com sucesso nos discos selecionados.", "Concluído", MessageBoxButton.OK, MessageBoxImage.Information);
                 await RefreshDisksAsync(silent: false);
             }
             catch (Exception ex)
             {
                 string logPath = DiskpartService.SaveErrorLog(ex.ToString());
-                MessageBox.Show($"{ex.Message}\n\nLog completo salvo em:\n{logPath}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                var result = MessageBox.Show(
+                    $"{ex.Message}\n\nLog salvo em:\n{logPath}\n\nDeseja copiar o caminho do log para a área de transferência?",
+                    "Erro na Execução",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Error
+                );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try { Clipboard.SetText(logPath); } catch { }
+                }
             }
             finally
             {

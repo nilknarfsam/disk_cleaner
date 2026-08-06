@@ -45,9 +45,20 @@
 
 ---
 
+### Versão 2.2.0 (Fase 1 Concluída - Resiliência & Notificações)
+- **Data**: Agosto 2026
+- **Novos Recursos**:
+  - **Notificação Sonora**: Disparo sonoro nativo (`SystemSounds.Asterisk`) ao finalizar formatação.
+  - **Desmontagem Preventiva (`ForceDismountVolumesAsync`)**: Liberação de volumes abertos antes do `diskpart clean`, evitando erros de acesso negado.
+  - **Copiar Log de Erros**: Opção com 1 clique para copiar o caminho do log de falhas para a área de transferência.
+  - **Persistência de Tema**: Salva a preferência de Modo Escuro / Claro entre reinicializações do app.
+
+---
+
 ## 🛠️ Estado Atual do Repositório
 
-- **Status**: Compilando sem avisos ou erros (`v2.1.0`).
+- **Status**: Compilando sem avisos ou erros (`v2.2.0`).
 - **Ramo Principal**: `main` no GitHub ([https://github.com/nilknarfsam/disk_cleaner](https://github.com/nilknarfsam/disk_cleaner)).
-- **Binários**: Executável standalone compilado em `dist/Limpador_USB.exe` e versionado em `releases/Limpador_USB-v2.1.0.exe`.
+- **Binários**: Executável standalone compilado em `dist/Limpador_USB.exe` e versionado em `releases/Limpador_USB-v2.2.0.exe`.
+
 
