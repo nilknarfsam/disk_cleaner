@@ -36,13 +36,13 @@ namespace Limpador_USB
             GridDisks.ItemsSource = _displayDisks;
 
             PopulateDriveLetters();
-            LoadThemePreference();
 
             _refreshTimer.Interval = TimeSpan.FromSeconds(RefreshSeconds);
             _refreshTimer.Tick += async (s, e) => await RefreshDisksAsync(silent: true);
 
             Loaded += async (s, e) =>
             {
+                LoadThemePreference();
                 await RefreshDisksAsync(silent: false);
                 _refreshTimer.Start();
             };
@@ -154,25 +154,43 @@ namespace Limpador_USB
 
             if (_isDarkMode)
             {
-                Background = new SolidColorBrush(Color.FromRgb(17, 24, 39));
-                MainRootGrid.Background = new SolidColorBrush(Color.FromRgb(17, 24, 39));
-                TxtTitle.Foreground = Brushes.White;
-                GridDisks.Background = new SolidColorBrush(Color.FromRgb(31, 41, 55));
-                GridDisks.Foreground = Brushes.White;
+                Resources["WindowBg"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));       // #0F172A
+                Resources["CardBg"] = new SolidColorBrush(Color.FromRgb(30, 41, 59));        // #1E293B
+                Resources["CardBorder"] = new SolidColorBrush(Color.FromRgb(51, 65, 85));     // #334155
+                Resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(248, 250, 252)); // #F8FAFC
+                Resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(148, 163, 184));// #94A3B8
+                Resources["InputBg"] = new SolidColorBrush(Color.FromRgb(30, 41, 59));       // #1E293B
+                Resources["InputFg"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));    // #F8FAFC
+                Resources["InputBorder"] = new SolidColorBrush(Color.FromRgb(71, 85, 105));   // #475569
+                Resources["HeaderBg"] = new SolidColorBrush(Color.FromRgb(30, 41, 59));      // #1E293B
+                Resources["HeaderFg"] = new SolidColorBrush(Color.FromRgb(241, 245, 249));   // #F1F5F9
+                Resources["RowBg"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));        // #0F172A
+                Resources["RowFg"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));     // #F8FAFC
+                Resources["RowSelectedBg"] = new SolidColorBrush(Color.FromRgb(3, 105, 161)); // #0369A1
+                Resources["RowSelectedFg"] = new SolidColorBrush(Color.FromRgb(240, 249, 255));// #F0F9FF
+                Resources["BtnSecondaryBg"] = new SolidColorBrush(Color.FromRgb(51, 65, 85)); // #334155
+                Resources["BtnSecondaryFg"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));// #F8FAFC
                 BtnTheme.Content = "☀️ Modo Claro";
-                BtnTheme.Background = new SolidColorBrush(Color.FromRgb(55, 65, 81));
-                BtnTheme.Foreground = Brushes.White;
             }
             else
             {
-                Background = new SolidColorBrush(Color.FromRgb(250, 250, 252));
-                MainRootGrid.Background = new SolidColorBrush(Color.FromRgb(250, 250, 252));
-                TxtTitle.Foreground = new SolidColorBrush(Color.FromRgb(17, 24, 39));
-                GridDisks.Background = Brushes.White;
-                GridDisks.Foreground = Brushes.Black;
+                Resources["WindowBg"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));   // #F8FAFC
+                Resources["CardBg"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));     // #FFFFFF
+                Resources["CardBorder"] = new SolidColorBrush(Color.FromRgb(203, 213, 225)); // #CBD5E1
+                Resources["TextPrimary"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));    // #0F172A
+                Resources["TextSecondary"] = new SolidColorBrush(Color.FromRgb(71, 85, 105));  // #475569
+                Resources["InputBg"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));    // #FFFFFF
+                Resources["InputFg"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));       // #0F172A
+                Resources["InputBorder"] = new SolidColorBrush(Color.FromRgb(148, 163, 184)); // #94A3B8
+                Resources["HeaderBg"] = new SolidColorBrush(Color.FromRgb(241, 245, 249));   // #F1F5F9
+                Resources["HeaderFg"] = new SolidColorBrush(Color.FromRgb(51, 65, 85));      // #334155
+                Resources["RowBg"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));     // #FFFFFF
+                Resources["RowFg"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));        // #0F172A
+                Resources["RowSelectedBg"] = new SolidColorBrush(Color.FromRgb(224, 242, 254));// #E0F2FE
+                Resources["RowSelectedFg"] = new SolidColorBrush(Color.FromRgb(3, 105, 161)); // #0369A1
+                Resources["BtnSecondaryBg"] = new SolidColorBrush(Color.FromRgb(241, 245, 249));// #F1F5F9
+                Resources["BtnSecondaryFg"] = new SolidColorBrush(Color.FromRgb(30, 41, 59));  // #1E293B
                 BtnTheme.Content = "🌙 Modo Escuro";
-                BtnTheme.Background = new SolidColorBrush(Color.FromRgb(229, 231, 235));
-                BtnTheme.Foreground = Brushes.Black;
             }
 
             SaveThemePreference();
@@ -320,7 +338,6 @@ namespace Limpador_USB
                     }
                 }
 
-                // Notificação sonora de conclusão
                 try { SystemSounds.Asterisk.Play(); } catch { }
 
                 MessageBox.Show("Operação finalizada com sucesso nos discos selecionados.", "Concluído", MessageBoxButton.OK, MessageBoxImage.Information);

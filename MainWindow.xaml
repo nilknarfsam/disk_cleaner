@@ -5,9 +5,86 @@
         Height="680" Width="1080"
         MinHeight="600" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
-        Background="#FAFAFC"
+        Background="{DynamicResource WindowBg}"
         FontFamily="Segoe UI">
     <Window.Resources>
+        <!-- Dynamic Brushes para Temas Light / Dark -->
+        <SolidColorBrush x:Key="WindowBg" Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="CardBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CardBorder" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#0F172A"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#475569"/>
+        <SolidColorBrush x:Key="InputBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="InputFg" Color="#0F172A"/>
+        <SolidColorBrush x:Key="InputBorder" Color="#94A3B8"/>
+        <SolidColorBrush x:Key="HeaderBg" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="HeaderFg" Color="#334155"/>
+        <SolidColorBrush x:Key="RowBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="RowFg" Color="#0F172A"/>
+        <SolidColorBrush x:Key="RowSelectedBg" Color="#E0F2FE"/>
+        <SolidColorBrush x:Key="RowSelectedFg" Color="#0369A1"/>
+        <SolidColorBrush x:Key="BtnSecondaryBg" Color="#F1F5F9"/>
+        <SolidColorBrush x:Key="BtnSecondaryFg" Color="#1E293B"/>
+
+        <!-- Estilo global de TextBlock -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        </Style>
+
+        <!-- Estilo global de RadioButton -->
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        </Style>
+
+        <!-- Estilo global de GroupBox -->
+        <Style TargetType="GroupBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+        </Style>
+
+        <!-- Estilo global de TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource InputBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource InputFg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource InputBorder}"/>
+            <Setter Property="Padding" Value="4,2"/>
+        </Style>
+
+        <!-- Estilo de DataGridColumnHeader -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource HeaderBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource HeaderFg}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="6,8"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+        </Style>
+
+        <!-- Estilo de DataGridRow -->
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="{DynamicResource RowBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource RowFg}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource RowSelectedBg}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource RowSelectedFg}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Estilo de DataGridCell -->
+        <Style TargetType="DataGridCell">
+            <Setter Property="Foreground" Value="{DynamicResource RowFg}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="{DynamicResource RowSelectedFg}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- DataTemplate para barra gráfica de espaço usado -->
         <DataTemplate x:Key="CapacityProgressTemplate">
             <Grid Margin="2,1">
@@ -16,9 +93,9 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <ProgressBar Grid.Column="0" Value="{Binding UsedPercentage}" Maximum="100" Height="14" 
-                             Foreground="#3B82F6" Background="#E5E7EB" BorderThickness="0"/>
+                             Foreground="#0284C7" Background="#E2E8F0" BorderThickness="0"/>
                 <TextBlock Grid.Column="1" Text="{Binding UsedStr}" Margin="6,0,0,0" FontSize="11" 
-                           VerticalAlignment="Center" FontWeight="SemiBold"/>
+                           VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>
@@ -38,14 +115,15 @@
         <!-- Topo: Título + Botão de Tema -->
         <DockPanel Grid.Row="0" Margin="0,0,0,4">
             <Button x:Name="BtnTheme" Content="🌙 Modo Escuro" Click="BtnTheme_Click" 
-                    Padding="10,4" DockPanel.Dock="Right" FontWeight="SemiBold" Background="#E5E7EB"/>
+                    Padding="10,4" DockPanel.Dock="Right" FontWeight="SemiBold" 
+                    Background="{DynamicResource BtnSecondaryBg}" Foreground="{DynamicResource BtnSecondaryFg}"/>
             <TextBlock x:Name="TxtTitle" Text="Limpador / Formatador de HD e SSD conectados via USB" 
-                       FontSize="18" FontWeight="Bold" Foreground="#111827"/>
+                       FontSize="18" FontWeight="Bold"/>
         </DockPanel>
 
         <!-- Alerta -->
         <TextBlock Grid.Row="1" Text="Atenção: esta ferramenta apaga permanentemente os discos selecionados. Use somente em HD/SSD externo via USB." 
-                   Foreground="#9A0000" FontWeight="Bold" FontSize="11.5" Margin="0,2,0,10"/>
+                   Foreground="#DC2626" FontWeight="Bold" FontSize="11.5" Margin="0,2,0,10"/>
 
         <!-- Barra de Pesquisa Rápida -->
         <DockPanel Grid.Row="2" Margin="0,0,0,8">
@@ -57,18 +135,9 @@
         <!-- Tabela de Discos DataGrid -->
         <DataGrid Grid.Row="3" x:Name="GridDisks" AutoGenerateColumns="False" CanUserAddRows="False"
                   CanUserDeleteRows="False" SelectionMode="Extended" HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E5E7EB"
-                  Background="White" RowHeaderWidth="0" FontSize="12"
+                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource CardBorder}"
+                  Background="{DynamicResource CardBg}" RowHeaderWidth="0" FontSize="12"
                   MouseLeftButtonUp="GridDisks_MouseLeftButtonUp">
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                            <Setter Property="Background" Value="#E8F4FC"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Selecionado" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="95"/>
                 <DataGridTextColumn Header="Tipo" Binding="{Binding DiskIcon}" Width="45" IsReadOnly="True"/>
@@ -125,20 +194,24 @@
         <!-- Botões -->
         <DockPanel Grid.Row="5" Margin="0,4,0,4">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                <Button x:Name="BtnRefresh" Content="Atualizar agora" Click="BtnRefresh_Click" Padding="12,6"/>
-                <Button x:Name="BtnSelectAll" Content="Selecionar todos" Click="BtnSelectAll_Click" Padding="12,6" Margin="6,0,0,0"/>
-                <Button x:Name="BtnUnselectAll" Content="Desmarcar todos" Click="BtnUnselectAll_Click" Padding="12,6" Margin="6,0,0,0"/>
-                <Button x:Name="BtnEject" Content="⏏️ Ejetar USB Selecionado" Click="BtnEject_Click" Padding="12,6" Margin="12,0,0,0" Background="#FEF3C7" Foreground="#92400E" FontWeight="SemiBold"/>
+                <Button x:Name="BtnRefresh" Content="Atualizar agora" Click="BtnRefresh_Click" Padding="12,6"
+                        Background="{DynamicResource BtnSecondaryBg}" Foreground="{DynamicResource BtnSecondaryFg}"/>
+                <Button x:Name="BtnSelectAll" Content="Selecionar todos" Click="BtnSelectAll_Click" Padding="12,6" Margin="6,0,0,0"
+                        Background="{DynamicResource BtnSecondaryBg}" Foreground="{DynamicResource BtnSecondaryFg}"/>
+                <Button x:Name="BtnUnselectAll" Content="Desmarcar todos" Click="BtnUnselectAll_Click" Padding="12,6" Margin="6,0,0,0"
+                        Background="{DynamicResource BtnSecondaryBg}" Foreground="{DynamicResource BtnSecondaryFg}"/>
+                <Button x:Name="BtnEject" Content="⏏️ Ejetar USB Selecionado" Click="BtnEject_Click" Padding="12,6" Margin="12,0,0,0"
+                        Background="#FEF3C7" Foreground="#92400E" FontWeight="SemiBold"/>
             </StackPanel>
 
             <Button x:Name="BtnExecute" Content="Executar nos discos selecionados" Click="BtnExecute_Click" 
-                    Padding="16,6" FontWeight="Bold" Background="#1B4965" Foreground="White" DockPanel.Dock="Right"/>
+                    Padding="16,6" FontWeight="Bold" Background="#0284C7" Foreground="White" DockPanel.Dock="Right"/>
         </DockPanel>
 
         <!-- Progress Bar -->
         <ProgressBar Grid.Row="6" x:Name="Progress" Height="6" IsIndeterminate="True" Visibility="Collapsed" Margin="0,4,0,4"/>
 
         <!-- Status -->
-        <TextBlock Grid.Row="7" x:Name="TxtStatus" Text="Iniciando..." Foreground="#4B5563" FontSize="11.5" Margin="0,4,0,0"/>
+        <TextBlock Grid.Row="7" x:Name="TxtStatus" Text="Iniciando..." Foreground="{DynamicResource TextSecondary}" FontSize="11.5" Margin="0,4,0,0"/>
     </Grid>
 </Window>
