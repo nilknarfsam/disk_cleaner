@@ -59,11 +59,48 @@ def run_hidden(command: list[str], timeout: int | None = None) -> subprocess.Com
 def get_usb_disks() -> list[dict]:
     """
     Lista discos USB usando PowerShell/Get-Disk.
-    Retorna apenas discos USB e remove discos de boot/sistema.
+    Retorna apenas discos USB e calcula tamanho total, espaço usado, livre e letras de unidade.
     """
     ps_script = """
 $disks = Get-Disk | Select-Object Number,FriendlyName,SerialNumber,BusType,Size,PartitionStyle,OperationalStatus,HealthStatus,IsBoot,IsSystem,IsOffline,IsReadOnly
-$disks | ConvertTo-Json -Depth 4
+$result = foreach ($d in $disks) {
+    if ($d.BusType -eq 'USB' -and -not $d.IsBoot -and -not $d.IsSystem) {
+        $parts = Get-Partition -DiskNumber $d.Number -ErrorAction SilentlyContinue
+        $vols = $parts | Get-Volume -ErrorAction SilentlyContinue
+        
+        $driveLetters = ($vols | Where-Object { $_.DriveLetter } | ForEach-Object { $_.DriveLetter + ":" }) -join ", "
+        
+        $totalSize = [int64]($d.Size)
+        $remSize = 0
+        $hasVols = $false
+        if ($vols) {
+            $hasVols = $true
+            foreach ($v in $vols) {
+                if ($null -ne $v.SizeRemaining) {
+                    $remSize += [int64]$v.SizeRemaining
+                }
+            }
+        }
+
+        [PSCustomObject]@{
+            Number            = $d.Number
+            FriendlyName      = $d.FriendlyName
+            SerialNumber      = $d.SerialNumber
+            BusType           = $d.BusType
+            Size              = $d.Size
+            SizeRemaining     = if ($hasVols) { $remSize } else { $null }
+            DriveLetters      = $driveLetters
+            PartitionStyle    = $d.PartitionStyle
+            OperationalStatus = $d.OperationalStatus
+            HealthStatus      = $d.HealthStatus
+            IsBoot            = $d.IsBoot
+            IsSystem          = $d.IsSystem
+            IsOffline         = $d.IsOffline
+            IsReadOnly        = $d.IsReadOnly
+        }
+    }
+}
+$result | ConvertTo-Json -Depth 4
 """
     result = run_hidden(
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
@@ -88,6 +125,24 @@ $disks | ConvertTo-Json -Depth 4
 
         size_bytes = int(disk.get("Size") or 0)
         disk["SizeGB"] = round(size_bytes / (1024 ** 3), 2) if size_bytes else 0
+
+        rem_bytes = disk.get("SizeRemaining")
+        if rem_bytes is not None and size_bytes > 0:
+            rem_bytes = int(rem_bytes)
+            used_bytes = max(0, size_bytes - rem_bytes)
+            used_gb = round(used_bytes / (1024 ** 3), 2)
+            free_gb = round(rem_bytes / (1024 ** 3), 2)
+            pct = round((used_bytes / size_bytes) * 100, 1) if size_bytes else 0
+            disk["UsedGB"] = used_gb
+            disk["FreeGB"] = free_gb
+            disk["UsedStr"] = f"{used_gb} GB ({pct}%)"
+            disk["FreeStr"] = f"{free_gb} GB"
+        else:
+            disk["UsedGB"] = None
+            disk["FreeGB"] = None
+            disk["UsedStr"] = "Não alocado"
+            disk["FreeStr"] = "0 GB"
+
         usb_disks.append(disk)
 
     usb_disks.sort(key=lambda item: int(item.get("Number", 9999)))
@@ -195,13 +250,142 @@ def build_diskpart_commands(
     return commands
 
 
+class ConfirmDialog(tk.Toplevel):
+    """Diálogo modal visual com opções claras de Sim / Não antes de executar."""
+
+    def __init__(self, parent, mode_label: str, disks_info: list[dict]):
+        super().__init__(parent)
+        self.title("Confirmação de Operação — Limpador USB")
+        self.geometry("560x450")
+        self.minsize(520, 420)
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.confirmed = False
+
+        container = ttk.Frame(self, padding=18)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        header_frame = tk.Frame(container, bg="#c9302c", padding=10)
+        header_frame.pack(fill=tk.X, pady=(0, 12))
+
+        header_label = tk.Label(
+            header_frame,
+            text="⚠️ CONFIRMAÇÃO DE APAGAMENTO DE DISCO",
+            font=("Segoe UI", 12, "bold"),
+            fg="white",
+            bg="#c9302c",
+        )
+        header_label.pack()
+
+        action_box = ttk.LabelFrame(container, text="Ação a ser executada", padding=10)
+        action_box.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Label(
+            action_box,
+            text=mode_label,
+            font=("Segoe UI", 10, "bold"),
+            foreground="#1b4965",
+        ).pack(anchor="w")
+
+        disks_box = ttk.LabelFrame(container, text="Discos selecionados que serão totalmente formatados/limpos", padding=10)
+        disks_box.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        text_frame = ttk.Frame(disks_box)
+        text_frame.pack(fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(text_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        disk_list_text = tk.Text(
+            text_frame,
+            height=5,
+            wrap="word",
+            yscrollcommand=scrollbar.set,
+            font=("Segoe UI", 9),
+            bg="#fdfdfd",
+            relief="solid",
+            bd=1,
+        )
+        disk_list_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=disk_list_text.yview)
+
+        for d in disks_info:
+            num = d.get("Number")
+            name = d.get("FriendlyName", "USB Drive")
+            size = d.get("SizeGB", 0)
+            letters = d.get("DriveLetters") or "Sem letra"
+            used = d.get("UsedStr", "-")
+            disk_list_text.insert(
+                tk.END,
+                f"• Disco {num}: {name}\n  Tamanho: {size} GB | Letra: {letters} | Espaço Usado: {used}\n\n",
+            )
+
+        disk_list_text.config(state=tk.DISABLED)
+
+        warn_msg = ttk.Label(
+            container,
+            text="ATENÇÃO: TODOS OS DADOS NOS DISCOS SERÃO PERDIDOS PERMANENTEMENTE!",
+            font=("Segoe UI", 9, "bold"),
+            foreground="#a00000",
+            anchor="center",
+        )
+        warn_msg.pack(fill=tk.X, pady=(0, 12))
+
+        btn_frame = ttk.Frame(container)
+        btn_frame.pack(fill=tk.X, pady=(4, 0))
+
+        btn_no = ttk.Button(
+            btn_frame,
+            text="❌ Não, Cancelar",
+            command=self.on_no,
+            width=20,
+        )
+        btn_no.pack(side=tk.LEFT, padx=(0, 10))
+        btn_no.focus_set()
+
+        btn_yes = ttk.Button(
+            btn_frame,
+            text="✔ Sim, Iniciar Processo",
+            command=self.on_yes,
+            width=22,
+        )
+        btn_yes.pack(side=tk.RIGHT)
+
+        self.protocol("WM_DELETE_WINDOW", self.on_no)
+        self.center_on_parent(parent)
+
+    def center_on_parent(self, parent):
+        self.update_idletasks()
+        pw = parent.winfo_width()
+        ph = parent.winfo_height()
+        px = parent.winfo_x()
+        py = parent.winfo_y()
+
+        w = self.winfo_width()
+        h = self.winfo_height()
+
+        x = px + (pw - w) // 2
+        y = py + (ph - h) // 2
+        self.geometry(f"+{x}+{y}")
+
+    def on_yes(self):
+        self.confirmed = True
+        self.destroy()
+
+    def on_no(self):
+        self.confirmed = False
+        self.destroy()
+
+
 class DiskCleanerApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title(APP_TITLE)
-        self.geometry("980x560")
-        self.minsize(920, 520)
+        self.geometry("1060x620")
+        self.minsize(980, 560)
 
         self.disks: list[dict] = []
         self.refreshing = False
@@ -236,14 +420,29 @@ class DiskCleanerApp(tk.Tk):
         )
         warning.pack(anchor="w", pady=(4, 12))
 
-        columns = ("select", "number", "name", "size", "style", "status", "health", "readonly")
+        columns = (
+            "select",
+            "number",
+            "name",
+            "size",
+            "used",
+            "free",
+            "letters",
+            "style",
+            "status",
+            "health",
+            "readonly",
+        )
         self.tree = ttk.Treeview(root, columns=columns, show="headings", height=12)
 
         headings = {
             "select": "Selecionado",
             "number": "Disco",
-            "name": "Nome",
-            "size": "Tamanho",
+            "name": "Nome / Modelo",
+            "size": "Tamanho Total",
+            "used": "Espaço Usado",
+            "free": "Espaço Livre",
+            "letters": "Letra",
             "style": "Partição",
             "status": "Status",
             "health": "Saúde",
@@ -251,22 +450,29 @@ class DiskCleanerApp(tk.Tk):
         }
 
         widths = {
-            "select": 95,
-            "number": 70,
-            "name": 290,
-            "size": 95,
-            "style": 100,
-            "status": 140,
-            "health": 110,
-            "readonly": 110,
+            "select": 105,
+            "number": 55,
+            "name": 220,
+            "size": 100,
+            "used": 125,
+            "free": 95,
+            "letters": 65,
+            "style": 75,
+            "status": 75,
+            "health": 75,
+            "readonly": 105,
         }
 
         for col in columns:
             self.tree.heading(col, text=headings[col])
-            self.tree.column(col, width=widths[col], anchor="center" if col != "name" else "w")
+            self.tree.column(col, width=widths[col], anchor="center" if col not in ("name", "used", "free") else "w")
+
+        self.tree.tag_configure("selected", background="#e8f4fc")
+        self.tree.tag_configure("unselected", background="#ffffff")
 
         self.tree.pack(fill=tk.BOTH, expand=True)
         self.tree.bind("<ButtonRelease-1>", self.toggle_selection)
+        self.tree.bind("<space>", self.toggle_keyboard_selection)
 
         options = ttk.LabelFrame(root, text="Ação", padding=12)
         options.pack(fill=tk.X, pady=(12, 8))
@@ -293,7 +499,7 @@ class DiskCleanerApp(tk.Tk):
         ttk.Entry(options, textvariable=self.label_var, width=18).grid(row=1, column=2, sticky="w")
 
         buttons = ttk.Frame(root)
-        buttons.pack(fill=tk.X, pady=(6, 6))
+        buttons.pack(fill=tk.X, pady=(6, 4))
 
         ttk.Button(buttons, text="Atualizar agora", command=self.refresh_disks).pack(side=tk.LEFT)
         ttk.Button(buttons, text="Selecionar todos", command=self.select_all).pack(side=tk.LEFT, padx=6)
@@ -306,12 +512,15 @@ class DiskCleanerApp(tk.Tk):
         )
         self.action_btn.pack(side=tk.RIGHT)
 
+        self.progress = ttk.Progressbar(root, mode="indeterminate")
+
         status = ttk.Label(root, textvariable=self.status_var)
         status.pack(anchor="w", pady=(4, 0))
 
     def disk_signature(self, disks: list[dict]) -> str:
         return "|".join(
             f"{d.get('Number')}:{d.get('FriendlyName')}:{d.get('Size')}:"
+            f"{d.get('SizeRemaining')}:{d.get('DriveLetters')}:"
             f"{d.get('OperationalStatus')}:{d.get('HealthStatus')}:{d.get('IsReadOnly')}"
             for d in disks
         )
@@ -338,31 +547,38 @@ class DiskCleanerApp(tk.Tk):
                 signature = self.disk_signature(disks)
 
                 def update_ui():
-                    selected_numbers = {
-                        int(self.tree.item(item, "values")[1])
-                        for item in self.tree.get_children()
-                        if self.tree.item(item, "values")[0] == "Sim"
-                    }
+                    selected_numbers = set()
+                    for item in self.tree.get_children():
+                        vals = self.tree.item(item, "values")
+                        if "☑" in vals[0] or vals[0].startswith("Sim"):
+                            selected_numbers.add(int(vals[1]))
 
                     self.disks = disks
                     self.tree.delete(*self.tree.get_children())
 
                     for disk in disks:
                         number = int(disk.get("Number"))
-                        selected = "Sim" if number in selected_numbers else "Não"
+                        selected = number in selected_numbers
+                        select_str = "☑ Sim" if selected else "☐ Não"
+                        tag = "selected" if selected else "unselected"
+
                         self.tree.insert(
                             "",
                             tk.END,
                             values=(
-                                selected,
+                                select_str,
                                 number,
                                 disk.get("FriendlyName", ""),
                                 f"{disk.get('SizeGB', 0)} GB",
+                                disk.get("UsedStr", "-"),
+                                disk.get("FreeStr", "-"),
+                                disk.get("DriveLetters") or "-",
                                 disk.get("PartitionStyle", ""),
                                 disk.get("OperationalStatus", ""),
                                 disk.get("HealthStatus", ""),
                                 "Sim" if disk.get("IsReadOnly") else "Não",
                             ),
+                            tags=(tag,),
                         )
 
                     self.last_signature = signature
@@ -387,32 +603,46 @@ class DiskCleanerApp(tk.Tk):
             return
 
         item = self.tree.identify_row(event.y)
-        col = self.tree.identify_column(event.x)
-
-        if not item or col != "#1":
+        if not item:
             return
 
         values = list(self.tree.item(item, "values"))
-        values[0] = "Não" if values[0] == "Sim" else "Sim"
-        self.tree.item(item, values=values)
+        is_selected = "☑" in values[0] or values[0].startswith("Sim")
+        new_selected = not is_selected
+
+        values[0] = "☑ Sim" if new_selected else "☐ Não"
+        tag = "selected" if new_selected else "unselected"
+        self.tree.item(item, values=values, tags=(tag,))
+
+    def toggle_keyboard_selection(self, event):
+        selected_items = self.tree.selection()
+        if not selected_items:
+            return
+        for item in selected_items:
+            values = list(self.tree.item(item, "values"))
+            is_selected = "☑" in values[0] or values[0].startswith("Sim")
+            new_selected = not is_selected
+            values[0] = "☑ Sim" if new_selected else "☐ Não"
+            tag = "selected" if new_selected else "unselected"
+            self.tree.item(item, values=values, tags=(tag,))
 
     def select_all(self):
         for item in self.tree.get_children():
             values = list(self.tree.item(item, "values"))
-            values[0] = "Sim"
-            self.tree.item(item, values=values)
+            values[0] = "☑ Sim"
+            self.tree.item(item, values=values, tags=("selected",))
 
     def unselect_all(self):
         for item in self.tree.get_children():
             values = list(self.tree.item(item, "values"))
-            values[0] = "Não"
-            self.tree.item(item, values=values)
+            values[0] = "☐ Não"
+            self.tree.item(item, values=values, tags=("unselected",))
 
     def get_selected_disk_numbers(self) -> list[int]:
         selected = []
         for item in self.tree.get_children():
             values = self.tree.item(item, "values")
-            if values[0] == "Sim":
+            if "☑" in values[0] or values[0].startswith("Sim"):
                 selected.append(int(values[1]))
         return selected
 
@@ -441,25 +671,22 @@ class DiskCleanerApp(tk.Tk):
         mode_label = (
             "LIMPAR E DEIXAR NÃO ALOCADO"
             if self.mode_var.get() == "clean_only"
-            else f"FORMATAR RAPIDAMENTE EM {self.fs_var.get()}"
+            else f"FORMATAR RAPIDAMENTE EM {self.fs_var.get()} (Rótulo: {self.label_var.get().strip() or 'FORMATADO'})"
         )
 
-        details = "\n".join([f"Disco {n}" for n in selected])
-        msg = (
-            f"Você está prestes a executar:\n\n{mode_label}\n\n"
-            f"Nos seguintes discos:\n{details}\n\n"
-            "TODOS OS DADOS SERÃO PERDIDOS PERMANENTEMENTE.\n\n"
-            "Digite APAGAR para confirmar."
-        )
+        disks_info = [d for d in self.disks if int(d.get("Number")) in selected]
 
-        confirm = tkinter.simpledialog.askstring("Confirmação obrigatória", msg, parent=self)
+        dialog = ConfirmDialog(self, mode_label=mode_label, disks_info=disks_info)
+        self.wait_window(dialog)
 
-        if confirm != "APAGAR":
-            messagebox.showinfo("Cancelado", "Operação cancelada.")
+        if not dialog.confirmed:
+            self.status_var.set("Operação cancelada pelo usuário.")
             return
 
         self.executing = True
         self.action_btn.config(state=tk.DISABLED)
+        self.progress.pack(fill=tk.X, pady=(4, 4))
+        self.progress.start(10)
         self.status_var.set("Executando operação... não remova os discos.")
 
         threading.Thread(target=self.execute_on_selected, args=(selected,), daemon=True).start()
@@ -489,7 +716,7 @@ class DiskCleanerApp(tk.Tk):
                 if not ok:
                     raise RuntimeError(f"Falha ao processar o Disco {disk_number}.")
 
-            self.after(0, lambda: messagebox.showinfo("Concluído", "Operação finalizada nos discos selecionados."))
+            self.after(0, lambda: messagebox.showinfo("Concluído", "Operação finalizada com sucesso nos discos selecionados."))
             self.after(0, self.refresh_disks)
 
         except Exception as exc:
@@ -504,6 +731,8 @@ class DiskCleanerApp(tk.Tk):
             )
         finally:
             self.executing = False
+            self.after(0, lambda: self.progress.stop())
+            self.after(0, lambda: self.progress.pack_forget())
             self.after(0, lambda: self.action_btn.config(state=tk.NORMAL))
             self.after(0, lambda: self.status_var.set("Pronto."))
 
@@ -514,5 +743,8 @@ class DiskCleanerApp(tk.Tk):
 
 if __name__ == "__main__":
     relaunch_as_admin()
+    app = DiskCleanerApp()
+    app.mainloop()
+admin()
     app = DiskCleanerApp()
     app.mainloop()

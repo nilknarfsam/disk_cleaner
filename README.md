@@ -15,6 +15,8 @@ Baixe o executável pronto na página de [Releases](https://github.com/nilknarfs
 ## Funcionalidades
 
 - **Detecção automática** de discos com `BusType = USB` (pendrives, HDs e SSDs em case USB)
+- **Cálculo de espaço de disco**: Exibe Tamanho Total, Espaço Usado (`GB` e `%`), Espaço Livre e Letra da unidade (ex.: `E:`)
+- **Caixas de seleção visíveis (Checkboxes)**: Marcadores `☑` / `☐` com seleção fácil clicando em qualquer parte da linha ou pela tecla `Espaço`
 - **Atualização em tempo real** da lista a cada 3 segundos ao conectar ou remover dispositivos
 - **Seleção múltipla** para processar vários discos em lote
 - **Dois modos de operação:**
@@ -22,6 +24,7 @@ Baixe o executável pronto na página de [Releases](https://github.com/nilknarfs
   - **Formatação rápida** — `clean` + `convert gpt` + partição primária + `format quick` + `assign`
 - **Escolha de sistema de arquivos:** NTFS, exFAT ou FAT32 (com aviso para discos acima de 32 GB)
 - **Rótulo personalizado** do volume na formatação
+- **Barra de progresso e status visual** durante o processamento do `diskpart`
 - **Elevação de administrador** solicitada uma única vez ao abrir o app
 - **Interface responsiva** — operações pesadas rodam em thread separada
 
@@ -35,7 +38,7 @@ Baixe o executável pronto na página de [Releases](https://github.com/nilknarfs
 | Bloqueio boot/sistema | Ignora discos marcados como `IsBoot` ou `IsSystem` |
 | Revalidação antes da execução | Confere novamente o estado do disco imediatamente antes do `diskpart` |
 | Bloqueio somente leitura / offline | Impede operação em discos não graváveis ou offline |
-| Confirmação explícita | Exige digitar **`APAGAR`** antes de qualquer operação destrutiva |
+| Diálogo modal de confirmação | Exibe aviso destacado com resumo dos discos e botões diretos de **Sim, Iniciar Processo** e **Não, Cancelar** |
 | Log de erros | Salva saída completa do `diskpart` em `%TEMP%\Limpador_USB_logs\` em caso de falha |
 
 > **Aviso:** mesmo com todas as proteções, esta ferramenta **apaga dados de forma permanente e irreversível**. Use somente em discos externos de teste ou quando tiver certeza absoluta do que está fazendo.
