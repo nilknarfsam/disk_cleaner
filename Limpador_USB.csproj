@@ -14,4 +14,8 @@
     <FileVersion>2.2.0.0</FileVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="app.ico" />
+  </ItemGroup>
+
 </Project>
