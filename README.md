@@ -1,3 +1,12 @@
+<!-- organizacao-github:inicio -->
+> [!NOTE]
+> **📌 Organização do GitHub (22/10/2026): ✅ MANTER (vitrine)**
+>
+> v2.1.0, completo. Fixar no perfil.
+>
+> _Nota temporária do Claude. Some quando a organização terminar._
+<!-- organizacao-github:fim -->
+
 # 💾 Limpador & Formatador de HD/SSD USB (.NET 9 WPF)
 
 [![Build .NET](https://img.shields.io/badge/.NET-9.0--windows-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
